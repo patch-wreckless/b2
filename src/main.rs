@@ -1,6 +1,7 @@
 use anyhow::{Error, Result, anyhow, bail};
 use crossbeam::channel::{Receiver, Sender, unbounded};
 
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::ops::Deref;
@@ -27,16 +28,34 @@ fn main() -> Result<()> {
 
     let receiver = get_files(&src);
 
-    let mut count = 0;
-    for _file in receiver.iter() {
-        if count % 1000 == 0 {
-            println!("Processed {} files...", count);
-        }
-        count += 1;
-    }
-    println!("Finished processing files.");
+    let mut files_by_extension: HashMap<String, Vec<String>> = HashMap::new();
 
-    println!("Total files: {}", count);
+    for file in receiver.iter() {
+        let extension = match file.extension() {
+            Some(ext) => ext.to_string_lossy(),
+            None => "".into(),
+        };
+        files_by_extension
+            .entry(extension.to_string())
+            .or_insert_with(Vec::new)
+            .push(file.to_string_lossy().to_string());
+    }
+
+    let mut sorted_entries: Vec<_> = files_by_extension.iter().collect();
+    sorted_entries.sort_by_key(|&(key, _)| key);
+
+    for (extension, values) in sorted_entries {
+        let extension = match extension.len() {
+            0 => "''".to_string(),
+            _ => extension.to_string(),
+        };
+        println!("{}:", extension);
+        let mut values = values.iter().collect::<Vec<_>>();
+        values.sort();
+        for value in values {
+            println!("  - {}", value);
+        }
+    }
 
     Ok(())
 }
