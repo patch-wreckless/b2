@@ -7,3 +7,4 @@ edition = "2024"
 anyhow = "1.0.102"
 clap = { version = "4", features = ["derive"] }
 crossbeam = "0.8.4"
+sha256 = "1.6.0"

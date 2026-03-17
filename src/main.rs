@@ -1,6 +1,8 @@
 mod cli;
+mod hashes;
 mod summarize;
 
+use hashes::hashes;
 use summarize::summarize;
 
 fn main() {
@@ -20,6 +22,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Commands::Summarize { src } => summarize(&src).map_err(|e| e.into()),
+        Commands::Hashes { src } => hashes(&src).map_err(|e| e.into()),
     }
 }
 

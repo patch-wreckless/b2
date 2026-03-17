@@ -40,4 +40,9 @@ pub enum Commands {
         /// The source directory to scan
         src: PathArg,
     },
+    /// Write a summary of the source directory organized by SHA256 to stdout.
+    Hashes {
+        /// The source directory to scan
+        src: PathArg,
+    },
 }
