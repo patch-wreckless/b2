@@ -44,24 +44,8 @@ pub fn hashes(src: &Path) -> anyhow::Result<()> {
         drop(file_receiver);
     });
 
-    let mut files_by_hash: HashMap<String, Vec<String>> = HashMap::new();
     for file in hash_receiver.iter() {
-        files_by_hash
-            .entry(file.hash)
-            .or_insert_with(Vec::new)
-            .push(file.path.to_string_lossy().to_string());
-    }
-
-    let mut sorted_entries: Vec<_> = files_by_hash.iter().collect();
-    sorted_entries.sort_by_key(|&(key, _)| key);
-
-    for (hash, values) in sorted_entries {
-        println!("{}:", hash);
-        let mut values = values.iter().collect::<Vec<_>>();
-        values.sort();
-        for value in values {
-            println!("  - {}", value);
-        }
+        println!("{} {}", file.path.display(), file.hash);
     }
 
     Ok(())
