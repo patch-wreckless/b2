@@ -1,16 +1,11 @@
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::thread;
+use std::{fmt, fs};
 
 pub fn hashes(src: &Path) -> anyhow::Result<()> {
-    let file_receiver = get_files(&src);
-
-    struct FileHash {
-        hash: String,
-        path: PathBuf,
-    }
+    let file_receiver = get_files(src);
 
     let (hash_sender, hash_receiver) = unbounded::<FileHash>();
 
@@ -23,7 +18,7 @@ pub fn hashes(src: &Path) -> anyhow::Result<()> {
 
     let mut workers = Vec::new();
 
-    for i in 0..hash_worker_count {
+    for _ in 0..hash_worker_count {
         let receiver = file_receiver.clone();
         let sender = hash_sender.clone();
         workers.push(thread::spawn(move || {
@@ -74,5 +69,44 @@ fn walk_dir(path: PathBuf, sender: Sender<PathBuf>) {
                 _ => {}
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileHash {
+    pub hash: String,
+    pub path: PathBuf,
+}
+
+impl fmt::Display for FileHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.path.display(), self.hash)
+    }
+}
+
+impl From<&FileHash> for String {
+    fn from(fh: &FileHash) -> Self {
+        fh.to_string()
+    }
+}
+
+impl FromStr for FileHash {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.rsplitn(2, char::is_whitespace);
+        let hash = parts.next().ok_or("missing hash")?.trim();
+        let path = parts.next().ok_or("missing path")?.trim();
+        if path.is_empty() {
+            return Err("empty path".into());
+        }
+        if hash.is_empty() {
+            return Err("empty hash".into());
+        }
+
+        Ok(FileHash {
+            path: PathBuf::from(path),
+            hash: hash.to_string(),
+        })
     }
 }

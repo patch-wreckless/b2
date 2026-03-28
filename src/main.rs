@@ -1,7 +1,9 @@
 mod cli;
+mod dupes;
 mod hashes;
 mod summarize;
 
+use dupes::dupes;
 use hashes::hashes;
 use summarize::summarize;
 
@@ -23,22 +25,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Summarize { src } => summarize(&src).map_err(|e| e.into()),
         Commands::Hashes { src } => hashes(&src).map_err(|e| e.into()),
+        Commands::Dupes => dupes().map_err(|e| e.into()),
     }
 }
-
-// fn validate_directories(src: &Path, dst: &Path) -> Result<()> {
-//     if !src.is_dir() {
-//         bail!("{} is not a directory", src.display());
-//     }
-//     if !dst.is_dir() {
-//         bail!("{} is not a directory", dst.display());
-//     }
-//     if dst.starts_with(src) {
-//         bail!(
-//             "<src> must not contain <dst> ({} contains {})",
-//             dst.display(),
-//             src.display()
-//         );
-//     }
-//     Ok(())
-// }

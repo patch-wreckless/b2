@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::thread;
 
 pub fn summarize(src: &Path) -> anyhow::Result<()> {
-    let receiver = get_files(&src);
+    let receiver = get_files(src);
 
     let mut files_by_extension: HashMap<String, Vec<String>> = HashMap::new();
 
@@ -16,7 +16,7 @@ pub fn summarize(src: &Path) -> anyhow::Result<()> {
         };
         files_by_extension
             .entry(extension.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(file.to_string_lossy().to_string());
     }
 

@@ -45,4 +45,6 @@ pub enum Commands {
         /// The source directory to scan
         src: PathArg,
     },
+    /// Identify duplicates files and directories.
+    Dupes,
 }
