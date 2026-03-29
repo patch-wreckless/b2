@@ -2,7 +2,7 @@ use crate::hashes::FileHash;
 
 use std::collections::BTreeMap;
 use std::ffi::{OsStr, OsString};
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 
 pub fn dupes() -> anyhow::Result<()> {
@@ -27,23 +27,12 @@ pub fn dupes() -> anyhow::Result<()> {
     let mut dir = Dir(BTreeMap::new());
     for hash in hashes {
         let hash = hash?;
-        dir.insert(&hash.path, &hash.hash);
+        dir.insert(&hash.path, &hash.hash)?;
     }
 
-    print_dir(OsStr::new(""), &dir, "");
+    print_dir(&mut io::stdout(), OsStr::new(""), &dir, "")?;
 
     Ok(())
-}
-
-fn print_dir(name: &OsStr, dir: &Dir, indent: &str) {
-    println!("{}{}/", indent, name.display());
-    let indent = format!("{}  ", indent);
-    for (name, node) in dir.0.iter() {
-        match node {
-            Node::File(file_hash) => println!("{}{} {}", indent, name.display(), file_hash.hash),
-            Node::Dir(dir) => print_dir(name, dir, &indent),
-        }
-    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -67,17 +56,6 @@ struct Dir(BTreeMap<OsString, Node>);
 enum Node {
     File(FileHash),
     Dir(Dir),
-}
-
-fn strip_root(path: &Path) -> &Path {
-    match path.has_root() {
-        true => {
-            let mut components = path.components();
-            _ = components.next();
-            components.as_path()
-        }
-        false => path,
-    }
 }
 
 impl Dir {
@@ -126,4 +104,60 @@ impl Dir {
 
         Ok(())
     }
+}
+
+/// Removes the root from the given path. If the given path has no root it's returned unmodified.
+fn strip_root(path: &Path) -> &Path {
+    match path.has_root() {
+        true => {
+            let mut components = path.components();
+            _ = components.next();
+            components.as_path()
+        }
+        false => path,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod strip_root {
+        use super::*;
+        use std::path::Path;
+
+        #[test]
+        fn removes_root() {
+            let input = Path::new("/foo/bar");
+            let expected = Path::new("foo/bar");
+            let actual = strip_root(input);
+            assert_eq!(expected, actual);
+        }
+
+        #[test]
+        fn returns_rootless_path_unmodified() {
+            let input = Path::new("foo/bar");
+            let expected = input;
+            let actual = strip_root(input);
+            assert_eq!(expected, actual);
+        }
+    }
+}
+
+fn print_dir<W: Write>(w: &mut W, name: &OsStr, dir: &Dir, indent: &str) -> io::Result<()> {
+    writeln!(w, "{}{}/", indent, name.to_string_lossy())?;
+    let indent = format!("{}  ", indent);
+
+    for (name, node) in dir.0.iter() {
+        match node {
+            Node::File(file_hash) => {
+                writeln!(w, "{}{} {}", indent, name.to_string_lossy(), file_hash.hash)?;
+            }
+            Node::Dir(dir) => {
+                print_dir(w, name, dir, &indent)?;
+            }
+        }
+    }
+
+    Ok(())
 }
