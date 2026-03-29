@@ -20,7 +20,7 @@ fn main() {
 fn run() -> anyhow::Result<()> {
     match Cli::try_parse()?.command {
         Command::Summarize { src } => summarize(&src),
-        Command::Hashes { src } => hashes(&src),
+        Command::Hashes { algo, src } => hashes(algo.into(), &src),
         Command::Dupes => dupes(),
     }
 }
