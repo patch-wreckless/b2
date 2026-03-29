@@ -6,21 +6,28 @@ use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
 
 pub fn dupes() -> anyhow::Result<()> {
-    let mut dir = Dir(BTreeMap::new());
-
-    let stdin = io::stdin();
-
-    for line in stdin.lock().lines() {
-        let line = line?;
-        if line.trim().is_empty() {
-            continue;
+    let lines = io::stdin().lock().lines().filter_map(|res| match res {
+        Ok(line) => {
+            let line = line.trim();
+            match line.is_empty() {
+                true => None,
+                false => Some(Ok(line.to_string())),
+            }
         }
+        err @ Err(_) => Some(err),
+    });
 
-        let fh: FileHash = line
-            .parse()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let hashes = lines.map(|res| -> anyhow::Result<FileHash> {
+        match res {
+            Ok(line) => line.parse::<FileHash>().map_err(|e| e.into()),
+            Err(err) => Err(err.into()),
+        }
+    });
 
-        dir.insert(&fh.path, &fh.hash)?;
+    let mut dir = Dir(BTreeMap::new());
+    for hash in hashes {
+        let hash = hash?;
+        dir.insert(&hash.path, &hash.hash);
     }
 
     print_dir(OsStr::new(""), &dir, "");

@@ -72,6 +72,16 @@ fn walk_dir(path: PathBuf, sender: Sender<PathBuf>) {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+#[error("error parsing file hash: {0}")]
+pub struct ParseError(String);
+
+impl ParseError {
+    fn new(msg: &str) -> Self {
+        ParseError(msg.to_string())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileHash {
     pub hash: String,
@@ -91,17 +101,17 @@ impl From<&FileHash> for String {
 }
 
 impl FromStr for FileHash {
-    type Err = String;
+    type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut parts = s.rsplitn(2, char::is_whitespace);
-        let hash = parts.next().ok_or("missing hash")?.trim();
-        let path = parts.next().ok_or("missing path")?.trim();
+        let hash = parts.next().ok_or(ParseError::new("missing hash"))?.trim();
+        let path = parts.next().ok_or(ParseError::new("missing path"))?.trim();
         if path.is_empty() {
-            return Err("empty path".into());
+            return Err(ParseError::new("empty path"));
         }
         if hash.is_empty() {
-            return Err("empty hash".into());
+            return Err(ParseError::new("empty hash"));
         }
 
         Ok(FileHash {
