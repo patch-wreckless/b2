@@ -18,13 +18,13 @@ fn main() {
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     use clap::Parser;
-    use cli::{Cli, Commands};
+    use cli::{Cli, Command};
 
     let cli = Cli::try_parse()?;
 
     match cli.command {
-        Commands::Summarize { src } => summarize(&src).map_err(|e| e.into()),
-        Commands::Hashes { src } => hashes(&src).map_err(|e| e.into()),
-        Commands::Dupes => dupes().map_err(|e| e.into()),
+        Command::Summarize { src } => summarize(&src).map_err(|e| e.into()),
+        Command::Hashes { src } => hashes(&src).map_err(|e| e.into()),
+        Command::Dupes => dupes().map_err(|e| e.into()),
     }
 }

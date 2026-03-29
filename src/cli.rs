@@ -30,11 +30,11 @@ impl FromStr for PathArg {
 #[command(name = "b2", version = "0.1")]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Command,
 }
 
 #[derive(Subcommand)]
-pub enum Commands {
+pub enum Command {
     /// Write a summary of the source directory organized by file extension to stdout.
     Summarize {
         /// The source directory to scan
