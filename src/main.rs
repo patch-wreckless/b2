@@ -18,9 +18,7 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let cli = Cli::try_parse()?;
-
-    match cli.command {
+    match Cli::try_parse()?.command {
         Command::Summarize { src } => summarize(&src).map_err(|e| e.into()),
         Command::Hashes { src } => hashes(&src).map_err(|e| e.into()),
         Command::Dupes => dupes().map_err(|e| e.into()),
