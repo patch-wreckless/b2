@@ -17,10 +17,10 @@ fn main() {
     }
 }
 
-fn run() -> Result<(), Box<dyn std::error::Error>> {
+fn run() -> anyhow::Result<()> {
     match Cli::try_parse()?.command {
-        Command::Summarize { src } => summarize(&src).map_err(|e| e.into()),
-        Command::Hashes { src } => hashes(&src).map_err(|e| e.into()),
-        Command::Dupes => dupes().map_err(|e| e.into()),
+        Command::Summarize { src } => summarize(&src),
+        Command::Hashes { src } => hashes(&src),
+        Command::Dupes => dupes(),
     }
 }
