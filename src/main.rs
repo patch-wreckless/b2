@@ -3,13 +3,14 @@ mod dupes;
 mod hashes;
 mod summarize;
 
+use clap::Parser;
+use cli::{Cli, Command};
 use dupes::dupes;
 use hashes::hashes;
+use std::process::exit;
 use summarize::summarize;
 
 fn main() {
-    use std::process::exit;
-
     if let Err(e) = run() {
         eprintln!("fatal: {}", e);
         exit(1);
@@ -17,9 +18,6 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    use clap::Parser;
-    use cli::{Cli, Command};
-
     let cli = Cli::try_parse()?;
 
     match cli.command {
