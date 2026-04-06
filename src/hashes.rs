@@ -3,11 +3,12 @@ use sha1::{Digest, Sha1};
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
-use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::{fmt, fs};
 use std::{io, thread};
+
+use crate::ascii;
 
 #[derive(Copy, Clone)]
 pub enum HashAlgo {
@@ -46,8 +47,8 @@ pub fn hashes(algo: HashAlgo, src: &Path) -> anyhow::Result<()> {
         drop(file_receiver);
     });
 
-    for file in hash_receiver.iter() {
-        println!("{} {}", file.path.display(), file.hash);
+    for hash in hash_receiver.iter() {
+        println!("{}", hash);
     }
 
     Ok(())
@@ -142,7 +143,12 @@ pub struct FileHash {
 
 impl fmt::Display for FileHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.path.display(), self.hash)
+        write!(
+            f,
+            "{}\t{}",
+            self.hash,
+            ascii::escape(self.path.as_os_str().as_encoded_bytes().iter().copied())
+        )
     }
 }
 
@@ -156,15 +162,18 @@ impl FromStr for FileHash {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts = s.rsplitn(2, char::is_whitespace);
+        let mut parts = s.splitn(2, '\t');
         let hash = parts.next().ok_or(ParseError::new("missing hash"))?.trim();
+        if hash.is_empty() {
+            return Err(ParseError::new("empty hash"));
+        }
+
         let path = parts.next().ok_or(ParseError::new("missing path"))?.trim();
         if path.is_empty() {
             return Err(ParseError::new("empty path"));
         }
-        if hash.is_empty() {
-            return Err(ParseError::new("empty hash"));
-        }
+        let path = ascii::unescape(&mut path.as_bytes().iter())
+            .map_err(|e| ParseError::new(&format!("invalid escape sequence: {}", e)))?;
 
         Ok(FileHash {
             path: PathBuf::from(path),

@@ -1,8 +1,10 @@
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::thread;
+
+use crate::ascii;
 
 pub fn summarize(src: &Path) -> anyhow::Result<()> {
     let receiver = get_files(src);
@@ -17,24 +19,22 @@ pub fn summarize(src: &Path) -> anyhow::Result<()> {
         files_by_extension
             .entry(extension.to_string())
             .or_default()
-            .push(file.to_string_lossy().to_string());
+            .push(ascii::escape(
+                file.as_os_str().as_encoded_bytes().iter().copied(),
+            ));
     }
 
     let mut sorted_entries: Vec<_> = files_by_extension.iter().collect();
     sorted_entries.sort_by_key(|&(key, _)| key);
 
-    for (extension, values) in sorted_entries {
-        let extension = match extension.len() {
-            0 => "''".to_string(),
-            _ => extension.to_string(),
-        };
-        println!("{}:", extension);
-        let mut values = values.iter().collect::<Vec<_>>();
-        values.sort();
-        for value in values {
-            println!("  - {}", value);
-        }
+    let mut sorted_files_by_extension = BTreeMap::new();
+
+    for (key, mut value) in files_by_extension {
+        value.sort();
+        sorted_files_by_extension.insert(key, value);
     }
+
+    serde_yaml::to_writer(std::io::stdout(), &sorted_files_by_extension)?;
 
     Ok(())
 }

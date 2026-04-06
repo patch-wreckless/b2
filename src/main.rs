@@ -1,3 +1,4 @@
+mod ascii;
 mod cli;
 mod dupes;
 mod hashes;

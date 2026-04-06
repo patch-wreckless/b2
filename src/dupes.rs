@@ -1,6 +1,7 @@
+use crate::ascii;
 use crate::hashes::FileHash;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ffi::{OsStr, OsString};
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
@@ -25,12 +26,39 @@ pub fn dupes() -> anyhow::Result<()> {
     });
 
     let mut dir = Dir(BTreeMap::new());
+    let mut paths_by_hash = HashMap::new();
+
     for hash in hashes {
         let hash = hash?;
+
         dir.insert(&hash.path, &hash.hash)?;
+
+        paths_by_hash
+            .entry(hash.hash)
+            .or_insert_with(Vec::new)
+            .push(ascii::escape(
+                hash.path.as_os_str().as_encoded_bytes().iter().copied(),
+            ));
     }
 
-    print_dir(&mut io::stdout(), OsStr::new(""), &dir, "")?;
+    // print_dir(&mut io::stdout(), OsStr::new(""), &dir, "")?;
+
+    let dupes: HashMap<_, Vec<String>> = paths_by_hash
+        .into_iter()
+        .filter(|(_, paths)| paths.len() > 1)
+        .collect();
+
+    let mut sorted_entries: Vec<_> = dupes.iter().collect();
+    sorted_entries.sort_by_key(|&(key, _)| key);
+
+    let mut sorted_dupes = BTreeMap::new();
+
+    for (key, mut value) in dupes {
+        value.sort();
+        sorted_dupes.insert(key, value);
+    }
+
+    serde_yaml::to_writer(io::stdout(), &sorted_dupes)?;
 
     Ok(())
 }
