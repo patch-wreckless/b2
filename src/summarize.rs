@@ -1,17 +1,37 @@
-use crossbeam::channel::{Receiver, Sender, unbounded};
-use std::collections::{BTreeMap, HashMap};
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::thread;
-
 use crate::ascii;
+use crossbeam::channel::Receiver;
+use std::collections::{BTreeMap, HashMap};
+use std::fmt::{self, Debug, Display};
+use std::path::PathBuf;
 
-pub fn summarize(src: &Path) -> anyhow::Result<()> {
-    let receiver = get_files(src);
+/// An error encountered while enumerating file system entries.
+#[derive(Debug)]
+pub struct EntryError {
+    msg: String,
+}
 
+impl EntryError {
+    pub fn new(msg: &str) -> Self {
+        Self {
+            msg: msg.to_string(),
+        }
+    }
+}
+
+impl Display for EntryError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "entry error: {}", self.msg)
+    }
+}
+
+impl std::error::Error for EntryError {}
+
+pub fn summarize2(files: Receiver<std::result::Result<PathBuf, EntryError>>) -> anyhow::Result<()> {
     let mut files_by_extension: HashMap<String, Vec<String>> = HashMap::new();
 
-    for file in receiver.iter() {
+    for file in files.iter() {
+        let file = file.map_err(|err| anyhow::anyhow!(err))?;
+
         let extension = match file.extension() {
             Some(ext) => ext.to_string_lossy(),
             None => "".into(),
@@ -37,30 +57,4 @@ pub fn summarize(src: &Path) -> anyhow::Result<()> {
     serde_yaml::to_writer(std::io::stdout(), &sorted_files_by_extension)?;
 
     Ok(())
-}
-
-fn get_files(path: &Path) -> Receiver<PathBuf> {
-    let (sender, receiver) = unbounded::<PathBuf>();
-    let path = path.to_path_buf();
-    thread::spawn(|| {
-        walk_dir(path, sender.clone());
-        drop(sender);
-    });
-    receiver
-}
-
-fn walk_dir(path: PathBuf, sender: Sender<PathBuf>) {
-    if let Ok(entries) = fs::read_dir(&path) {
-        for entry in entries.flatten() {
-            match entry.file_type() {
-                Ok(ft) if ft.is_file() => {
-                    sender.send(entry.path()).unwrap();
-                }
-                Ok(ft) if ft.is_dir() => {
-                    walk_dir(entry.path(), sender.clone());
-                }
-                _ => {}
-            }
-        }
-    }
 }

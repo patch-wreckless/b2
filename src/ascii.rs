@@ -89,7 +89,7 @@ fn escape_byte(b: u8) -> Option<Vec<u8>> {
         return seq;
     }
 
-    if b >= 0x20 && b < 0x7f {
+    if (0x20..0x7f).contains(&b) {
         return None;
     }
 
