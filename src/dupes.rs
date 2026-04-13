@@ -2,8 +2,8 @@ use crate::ascii;
 use crate::hashes::FileHash;
 
 use std::collections::{BTreeMap, HashMap};
-use std::ffi::{OsStr, OsString};
-use std::io::{self, BufRead, Write};
+use std::ffi::OsString;
+use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
 
 pub fn dupes() -> anyhow::Result<()> {
@@ -40,8 +40,6 @@ pub fn dupes() -> anyhow::Result<()> {
                 hash.path.as_os_str().as_encoded_bytes().iter().copied(),
             ));
     }
-
-    // print_dir(&mut io::stdout(), OsStr::new(""), &dir, "")?;
 
     let dupes: HashMap<_, Vec<String>> = paths_by_hash
         .into_iter()
@@ -170,22 +168,4 @@ mod tests {
             assert_eq!(expected, actual);
         }
     }
-}
-
-fn print_dir<W: Write>(w: &mut W, name: &OsStr, dir: &Dir, indent: &str) -> io::Result<()> {
-    writeln!(w, "{}{}/", indent, name.to_string_lossy())?;
-    let indent = format!("{}  ", indent);
-
-    for (name, node) in dir.0.iter() {
-        match node {
-            Node::File(file_hash) => {
-                writeln!(w, "{}{} {}", indent, name.to_string_lossy(), file_hash.hash)?;
-            }
-            Node::Dir(dir) => {
-                print_dir(w, name, dir, &indent)?;
-            }
-        }
-    }
-
-    Ok(())
 }

@@ -1,36 +1,23 @@
 use crate::ascii;
-use crossbeam::channel::Receiver;
+use crate::xfs;
 use std::collections::{BTreeMap, HashMap};
-use std::fmt::{self, Debug, Display};
-use std::path::PathBuf;
 
-/// An error encountered while enumerating file system entries.
-#[derive(Debug)]
-pub struct EntryError {
-    msg: String,
-}
-
-impl EntryError {
-    pub fn new(msg: &str) -> Self {
-        Self {
-            msg: msg.to_string(),
-        }
-    }
-}
-
-impl Display for EntryError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "entry error: {}", self.msg)
-    }
-}
-
-impl std::error::Error for EntryError {}
-
-pub fn summarize2(files: Receiver<std::result::Result<PathBuf, EntryError>>) -> anyhow::Result<()> {
+pub fn summarize(walk: impl Iterator<Item = Result<xfs::Entry, xfs::Error>>) -> anyhow::Result<()> {
     let mut files_by_extension: HashMap<String, Vec<String>> = HashMap::new();
 
-    for file in files.iter() {
-        let file = file.map_err(|err| anyhow::anyhow!(err))?;
+    for file in walk {
+        let entry = file.map_err(|err| anyhow::anyhow!(err))?;
+
+        let file = match entry {
+            xfs::Entry::Directory { .. } => continue,
+            xfs::Entry::Symlink { path } => {
+                anyhow::bail!(format!("symlinks are not supported ({})", path.display()))
+            }
+            xfs::Entry::Unknown { path } => {
+                anyhow::bail!(format!("unknown entry type ({})", path.display()))
+            }
+            xfs::Entry::File { path } => path,
+        };
 
         let extension = match file.extension() {
             Some(ext) => ext.to_string_lossy(),
