@@ -13,6 +13,7 @@ use hashes::hashes;
 use std::path::Path;
 use std::process::exit;
 
+use crate::cli::HashAlgo;
 use crate::files::IntoFilePaths;
 use crate::summarize::summarize;
 
@@ -26,11 +27,19 @@ fn main() {
 fn run() -> anyhow::Result<()> {
     match Cli::try_parse()?.command {
         Command::Summarize { src } => run_summarize(&src),
-        Command::Hashes { algo, src } => hashes(algo.into(), &src),
+        Command::Hashes { algo, src } => run_hashes(algo, &src),
         Command::Dupes => dupes(),
     }
 }
 
 fn run_summarize(src: &Path) -> anyhow::Result<()> {
-    summarize(xfs::walk(src).into_file_paths())
+    summarize(walk_files(src))
+}
+
+fn run_hashes(algo: HashAlgo, src: &Path) -> anyhow::Result<()> {
+    hashes(algo.into(), walk_files(src))
+}
+
+fn walk_files(src: &Path) -> impl Iterator<Item = files::FilePathItem> {
+    xfs::walk(src).into_file_paths()
 }

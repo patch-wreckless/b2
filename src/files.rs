@@ -38,6 +38,8 @@ impl From<crate::xfs::Error> for Error {
     }
 }
 
+impl std::error::Error for Error {}
+
 // The type of item...
 pub type FilePathItem = Result<PathBuf, Error>;
 
