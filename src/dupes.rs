@@ -1,10 +1,10 @@
-use crate::ascii;
-use crate::hashes::FileHash;
-
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::OsString;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
+
+use crate::ascii;
+use crate::hashes::FileHash;
 
 pub fn dupes() -> anyhow::Result<()> {
     let lines = io::stdin().lock().lines().filter_map(|res| match res {

@@ -1,6 +1,7 @@
+use std::collections::{BTreeMap, HashMap};
+
 use crate::ascii;
 use crate::files;
-use std::collections::{BTreeMap, HashMap};
 
 pub fn summarize(file_paths: impl Iterator<Item = files::FilePathItem>) -> anyhow::Result<()> {
     let mut files_by_extension: HashMap<String, Vec<String>> = HashMap::new();
@@ -12,6 +13,7 @@ pub fn summarize(file_paths: impl Iterator<Item = files::FilePathItem>) -> anyho
             Some(ext) => ext.to_string_lossy(),
             None => "".into(),
         };
+
         files_by_extension
             .entry(extension.to_string())
             .or_default()

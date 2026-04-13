@@ -1,7 +1,7 @@
-use crate::xfs;
 use std::fmt::{self, Display};
 use std::path::PathBuf;
 
+use crate::xfs;
 /// An error encountered while walking the file system.
 #[derive(Debug, PartialEq)]
 pub struct Error {

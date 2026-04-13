@@ -1,16 +1,16 @@
-use crate::files;
 use crossbeam::channel::{Receiver, unbounded};
 use sha1::{Digest, Sha1};
 use std::error::Error;
+use std::fmt;
 use std::fs::File;
+use std::io;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::mpsc;
-use std::fmt;
-use std::io;
 
 use crate::ascii;
+use crate::files;
 
 #[derive(Copy, Clone)]
 pub enum HashAlgo {
