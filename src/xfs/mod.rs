@@ -11,7 +11,7 @@ pub struct Error {
 }
 
 impl Error {
-    fn new(path: impl Into<PathBuf>, message: impl Into<String>) -> Self {
+    pub fn new(path: impl Into<PathBuf>, message: impl Into<String>) -> Self {
         Self {
             path: path.into(),
             message: message.into(),
@@ -21,12 +21,7 @@ impl Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} (path: {})",
-            self.message,
-            self.path.display()
-        )
+        write!(f, "{} (path: {})", self.message, self.path.display())
     }
 }
 
@@ -40,19 +35,19 @@ pub enum Entry {
 }
 
 impl Entry {
-    fn file(path: impl Into<PathBuf>) -> Self {
+    pub fn file(path: impl Into<PathBuf>) -> Self {
         Self::File { path: path.into() }
     }
 
-    fn directory(path: impl Into<PathBuf>) -> Self {
+    pub fn directory(path: impl Into<PathBuf>) -> Self {
         Self::Directory { path: path.into() }
     }
 
-    fn symlink(path: impl Into<PathBuf>) -> Self {
+    pub fn symlink(path: impl Into<PathBuf>) -> Self {
         Self::Symlink { path: path.into() }
     }
 
-    fn unknown(path: impl Into<PathBuf>) -> Self {
+    pub fn unknown(path: impl Into<PathBuf>) -> Self {
         Self::Unknown { path: path.into() }
     }
 }
@@ -73,10 +68,14 @@ impl Entry {
     }
 }
 
-pub fn walk(path: impl Into<PathBuf>) -> impl Iterator<Item = Result<Entry, Error>> {
+// The type of the items returned when walking the file system.
+pub type WalkItem = Result<Entry, Error>;
+
+// Walks the directory at the given recursively.
+pub fn walk(dir_path: impl Into<PathBuf>) -> impl Iterator<Item = WalkItem> {
     WalkIter {
         active_read_dir: None,
-        dir_queue: VecDeque::from([path.into()]),
+        dir_queue: VecDeque::from([dir_path.into()]),
     }
 }
 
@@ -86,7 +85,7 @@ struct WalkIter {
 }
 
 impl Iterator for WalkIter {
-    type Item = Result<Entry, Error>;
+    type Item = WalkItem;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(read_dir) = self.active_read_dir.as_mut() {
@@ -156,9 +155,7 @@ mod tests {
         use super::*;
         use std::path::Path;
 
-        fn sort_entries(
-            entries: impl Iterator<Item = Result<Entry, Error>>,
-        ) -> Vec<Result<Entry, Error>> {
+        fn sort_entries(entries: impl Iterator<Item = WalkItem>) -> Vec<WalkItem> {
             let mut entries: Vec<_> = entries.collect();
             entries.sort_by_key(|res| match res {
                 Ok(entry) => match entry {

@@ -1,6 +1,7 @@
 mod ascii;
 mod cli;
 mod dupes;
+mod files;
 mod hashes;
 mod summarize;
 mod xfs;
@@ -9,9 +10,10 @@ use clap::Parser;
 use cli::{Cli, Command};
 use dupes::dupes;
 use hashes::hashes;
-use std::process::exit;
 use std::path::Path;
+use std::process::exit;
 
+use crate::files::IntoFilePaths;
 use crate::summarize::summarize;
 
 fn main() {
@@ -30,5 +32,5 @@ fn run() -> anyhow::Result<()> {
 }
 
 fn run_summarize(src: &Path) -> anyhow::Result<()> {
-    summarize(xfs::walk(src))
+    summarize(xfs::walk(src).into_file_paths())
 }

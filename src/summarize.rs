@@ -1,23 +1,12 @@
 use crate::ascii;
-use crate::xfs;
+use crate::files;
 use std::collections::{BTreeMap, HashMap};
 
-pub fn summarize(walk: impl Iterator<Item = Result<xfs::Entry, xfs::Error>>) -> anyhow::Result<()> {
+pub fn summarize(file_paths: impl Iterator<Item = files::FilePathItem>) -> anyhow::Result<()> {
     let mut files_by_extension: HashMap<String, Vec<String>> = HashMap::new();
 
-    for file in walk {
-        let entry = file.map_err(|err| anyhow::anyhow!(err))?;
-
-        let file = match entry {
-            xfs::Entry::Directory { .. } => continue,
-            xfs::Entry::Symlink { path } => {
-                anyhow::bail!(format!("symlinks are not supported ({})", path.display()))
-            }
-            xfs::Entry::Unknown { path } => {
-                anyhow::bail!(format!("unknown entry type ({})", path.display()))
-            }
-            xfs::Entry::File { path } => path,
-        };
+    for file in file_paths {
+        let file = file.map_err(|err| anyhow::anyhow!(err))?;
 
         let extension = match file.extension() {
             Some(ext) => ext.to_string_lossy(),
